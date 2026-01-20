@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  # --- Frontend e Backend ---
+  # --- Backend ---
   worklenz-api:
     build:
-      context: ./worklenz-backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: worklenz-backend/Dockerfile
     restart: unless-stopped
     environment:
       - NODE_ENV=production
@@ -17,17 +17,21 @@ services:
     networks:
       - worklenz-net
 
+  # --- Frontend ---
   worklenz-web:
     build:
-      context: ./worklenz-web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: worklenz-web/Dockerfile
+      args:
+        # Passando variáveis de build necessárias para o React/Vite
+        - VITE_API_URL=${DOMAIN}
     restart: unless-stopped
     environment:
       - NODE_ENV=production
     networks:
       - worklenz-net
 
-  # --- O Nginx Interno do Worklenz (A ponte para o Coolify) ---
+  # --- O Nginx Interno ---
   nginx:
     image: nginx:alpine
     restart: unless-stopped
@@ -36,7 +40,6 @@ services:
     depends_on:
       - worklenz-api
       - worklenz-web
-    # REMOVIDO mapeamento de porta 80:80 para não quebrar o Coolify
     networks:
       - worklenz-net
     healthcheck:
@@ -45,7 +48,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # --- Infraestrutura (Banco, Cache, Arquivos) ---
+  # --- Infraestrutura ---
   postgres:
     image: postgres:15-alpine
     restart: unless-stopped
